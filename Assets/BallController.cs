@@ -49,6 +49,17 @@ public class BallController : MonoBehaviour
 
             Vector2 contact = collision.contacts[0].point;
             Vector2 dir = ((Vector2)transform.position - contact).normalized;
+            if (Mathf.Abs(dir.x) < 0.2f)
+            {
+                float side = collision.transform.position.x < 0 ? 1 : -1;
+                // player gauche → envoie à droite
+                // player droite → envoie à gauche
+
+                dir.x = side * 0.5f;
+                dir.y = Mathf.Abs(dir.y);
+
+                dir = dir.normalized;
+            }
 
             float power = gameManager.ballForce + playerRb.linearVelocity.magnitude * 0.3f;
 

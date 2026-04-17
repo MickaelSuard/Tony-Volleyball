@@ -2,25 +2,38 @@ using UnityEngine;
 
 public class MainMenu : MonoBehaviour
 {
-    // Référence au panneau menu
     public GameObject menuPanel;
+    public GameManager gameManager;
 
-    // Bouton Start
-    public void StartGame()
+    void Start()
     {
-        if (menuPanel != null)
-        {
-            menuPanel.SetActive(false); // Masque le menu
-        }
-
-        // Ici tu peux activer d'autres choses si besoin, comme commencer le jeu
-        // Exemple : activer les joueurs ou la balle
+        Time.timeScale = 0f;
+        if (menuPanel != null) menuPanel.SetActive(true);
     }
 
-    // Bouton Quit
+    public void PlaySolo()
+    {
+        if (gameManager != null)
+        {
+            Time.timeScale = 1f;
+            menuPanel.SetActive(false);
+            gameManager.InitializeGame(true); 
+        }
+    }
+
+    public void PlayTwoPlayers()
+    {
+        if (gameManager != null)
+        {
+            Time.timeScale = 1f;
+            menuPanel.SetActive(false);
+            gameManager.InitializeGame(false); 
+        }
+    }
+
     public void QuitGame()
     {
-        Debug.Log("Quitter le jeu");
+        Debug.Log("Quitter");
         Application.Quit();
     }
 }
