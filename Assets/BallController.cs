@@ -82,4 +82,13 @@ public class BallController : MonoBehaviour
         rb.angularVelocity = 0f;
         firstHit = false;
     }
+
+    public void LaunchServe(Vector2 velocity)
+    {
+        if (rb == null) rb = GetComponent<Rigidbody2D>();
+
+        rb.bodyType = RigidbodyType2D.Dynamic;
+        rb.linearVelocity = velocity;
+        firstHit = true;
+    }
 }

@@ -24,6 +24,13 @@ public class GameManager : MonoBehaviour
     public Vector2 player1StartPos = new Vector2(-5, -3);
     public Vector2 player2StartPos = new Vector2(5, -3);
     public float messageDuration = 1.5f;
+    [Header("Service")]
+    public float pointRestartDelay = 3f;
+    public float netX = 0f;
+    public float serveSideOffset = 0f;
+    public float serveBallY = 1f;
+    public float serveForce = 6f;
+    public float serveUpwardForce = 2f;
     public int maxScore = 10; // On définit la limite ici
 
     [Header("Score")]
@@ -42,6 +49,7 @@ public class GameManager : MonoBehaviour
     private BallController ballController;
     private bool gameOver = false;
     private bool gameStarted = false;
+    private bool roundResetting = false;
     private bool player1AiEnabled = false;
     private bool player2AiEnabled = false;
 
@@ -94,8 +102,8 @@ public class GameManager : MonoBehaviour
         }
 
         UpdateScore();
-        ResetRound(player1Obj);
         gameStarted = true;
+        StartCoroutine(StartRoundAfterDelay(player1Obj));
     }
 
     void Update()
@@ -164,15 +172,14 @@ public class GameManager : MonoBehaviour
 
     public void OnBallHitGround(float ballX)
     {
-        if (gameOver) return; // Si c'est fini, on ne fait plus rien
+        if (gameOver || roundResetting) return; // Si c'est fini, on ne fait plus rien
 
         if (ballX < 0)
         {
             Player2Scores();
             if (!gameOver) // On vérifie si ce point n'était pas le dernier
             {
-                ShowPointMessage("Player 2 marque !");
-                ResetRound(player1Obj);
+                StartCoroutine(ResetRoundAfterPoint(player1Obj, "Player 2 marque !"));
             }
         }
         else
@@ -180,10 +187,35 @@ public class GameManager : MonoBehaviour
             Player1Scores();
             if (!gameOver)
             {
-                ShowPointMessage("Player 1 marque !");
-                ResetRound(player2Obj);
+                StartCoroutine(ResetRoundAfterPoint(player2Obj, "Player 1 marque !"));
             }
         }
+    }
+
+    IEnumerator ResetRoundAfterPoint(GameObject losingPlayer, string message)
+    {
+        roundResetting = true;
+        ShowPointMessage(message);
+        CancelInvoke(nameof(ClearPointMessage));
+
+        PrepareRound(losingPlayer);
+
+        yield return new WaitForSeconds(pointRestartDelay);
+
+        LaunchServe(losingPlayer);
+        ClearPointMessage();
+        roundResetting = false;
+    }
+
+    IEnumerator StartRoundAfterDelay(GameObject losingPlayer)
+    {
+        roundResetting = true;
+        PrepareRound(losingPlayer);
+
+        yield return new WaitForSeconds(pointRestartDelay);
+
+        LaunchServe(losingPlayer);
+        roundResetting = false;
     }
 
     public void Player1Scores()
@@ -244,7 +276,7 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    void ResetRound(GameObject nextServer)
+    void PrepareRound(GameObject nextServer)
     {
         if (gameOver) return;
 
@@ -254,8 +286,23 @@ public class GameManager : MonoBehaviour
         player2Obj.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
 
         servingPlayerObj = nextServer;
-        ball.position = servingPlayerObj.transform.position + Vector3.up * 1f;
+        ball.position = GetServeBallPosition(nextServer);
         ballController.ResetBall();
+    }
+
+    private void LaunchServe(GameObject losingPlayer)
+    {
+        if (gameOver) return;
+
+        float side = losingPlayer == player1Obj ? -1f : 1f;
+        Vector2 velocity = new Vector2(side * serveForce, serveUpwardForce);
+        ballController.LaunchServe(velocity);
+    }
+
+    private Vector3 GetServeBallPosition(GameObject losingPlayer)
+    {
+        float side = losingPlayer == player1Obj ? -1f : 1f;
+        return new Vector3(netX + serveSideOffset * side, serveBallY, ball.position.z);
     }
 
     private void ShowPointMessage(string message)
