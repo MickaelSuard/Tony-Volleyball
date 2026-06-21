@@ -31,6 +31,8 @@ public class GameManager : MonoBehaviour
     public float serveBallY = 1f;
     public float serveForce = 6f;
     public float serveUpwardForce = 2f;
+    [Header("Physique")]
+    public PhysicsMaterial2D noStickMaterial;
     public int maxScore = 10; // On définit la limite ici
 
     [Header("Score")]
@@ -81,6 +83,7 @@ public class GameManager : MonoBehaviour
         ballController = ballObj.GetComponent<BallController>();
         ballController.gameManager = this;
         ballController.groundObj = groundObj;
+        ApplyNoStickMaterials();
 
         ConfigurePlayerAI(player1Obj, false, true);
         player1AiEnabled = false;
@@ -153,6 +156,34 @@ public class GameManager : MonoBehaviour
         }
 
         ai.enabled = enableAI;
+    }
+
+    private void ApplyNoStickMaterials()
+    {
+        if (noStickMaterial == null)
+        {
+            noStickMaterial = new PhysicsMaterial2D("No Stick Material");
+            noStickMaterial.friction = 0f;
+            noStickMaterial.bounciness = 0f;
+        }
+
+        ApplyNoStickMaterial(player1Obj);
+        ApplyNoStickMaterial(player2Obj);
+        ApplyNoStickMaterial(groundObj);
+        ApplyNoStickMaterial(GameObject.Find("LeftWall"));
+        ApplyNoStickMaterial(GameObject.Find("RightWall"));
+        ApplyNoStickMaterial(GameObject.Find("Net"));
+    }
+
+    private void ApplyNoStickMaterial(GameObject obj)
+    {
+        if (obj == null) return;
+
+        Collider2D[] colliders = obj.GetComponentsInChildren<Collider2D>();
+        foreach (Collider2D collider in colliders)
+        {
+            collider.sharedMaterial = noStickMaterial;
+        }
     }
 
     IEnumerator ShowControlsCoroutine()

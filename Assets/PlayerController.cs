@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     public float speed = 8f;
-    public float jumpForce = 12f;
+    public float jumpForce = 11f;
 
     public Key left;
     public Key right;
