@@ -5,6 +5,7 @@ public class AIController : MonoBehaviour
     public float speed = 9f; // Augmenté pour être "imbattable"
     public float jumpForce = 12f;
     public Transform ball;
+    public bool playOnLeftSide = false;
     private Rigidbody2D ballRb;
 
     [Header("Zone IA")]
@@ -31,10 +32,14 @@ public class AIController : MonoBehaviour
     void Update()
     {
         if (ball == null) return;
+        if (rb == null) rb = GetComponent<Rigidbody2D>();
+        if (ballRb == null) ballRb = ball.GetComponent<Rigidbody2D>();
+        if (ballRb == null) return;
+
         jumpTimer -= Time.deltaTime;
 
         float move = 0;
-        bool ballOnAISide = ball.position.x > 0;
+        bool ballOnAISide = playOnLeftSide ? ball.position.x < 0 : ball.position.x > 0;
         float targetX;
 
         if (!ballOnAISide)
@@ -57,7 +62,7 @@ public class AIController : MonoBehaviour
                 targetX = ball.position.x;
             }
 
-            targetX = Mathf.Clamp(targetX, minX, maxX);
+            targetX = ClampToSide(targetX);
 
             // Déplacement
             if (targetX < transform.position.x - followOffset) move = -1;
@@ -90,8 +95,13 @@ public class AIController : MonoBehaviour
     void LateUpdate()
     {
         Vector3 pos = transform.position;
-        pos.x = Mathf.Clamp(pos.x, minX, maxX);
+        pos.x = ClampToSide(pos.x);
         transform.position = pos;
+    }
+
+    float ClampToSide(float x)
+    {
+        return Mathf.Clamp(x, Mathf.Min(minX, maxX), Mathf.Max(minX, maxX));
     }
 
     void OnCollisionEnter2D(Collision2D col)

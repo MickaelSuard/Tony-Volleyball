@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using UnityEngine.InputSystem;
 
 public class GameManager : MonoBehaviour
 {
@@ -40,6 +41,9 @@ public class GameManager : MonoBehaviour
     private TMP_Text pointText;
     private BallController ballController;
     private bool gameOver = false;
+    private bool gameStarted = false;
+    private bool player1AiEnabled = false;
+    private bool player2AiEnabled = false;
 
     public bool soloMode = true;
 
@@ -70,21 +74,18 @@ public class GameManager : MonoBehaviour
         ballController.gameManager = this;
         ballController.groundObj = groundObj;
 
-        // Gestion Solo vs Multi
-        AIController ai = player2Obj.GetComponent<AIController>();
-        PlayerController p2Control = player2Obj.GetComponent<PlayerController>();
+        ConfigurePlayerAI(player1Obj, false, true);
+        player1AiEnabled = false;
 
         if (soloMode)
         {
-            if (p2Control != null) p2Control.enabled = false;
-            if (ai == null) ai = player2Obj.AddComponent<AIController>();
-            ai.ball = ballObj.transform;
-            ai.enabled = true;
+            ConfigurePlayerAI(player2Obj, true, false);
+            player2AiEnabled = true;
         }
         else
         {
-            if (ai != null) ai.enabled = false;
-            if (p2Control != null) p2Control.enabled = true;
+            ConfigurePlayerAI(player2Obj, false, false);
+            player2AiEnabled = false;
         }
 
         if (zqsdGroup != null)
@@ -94,7 +95,58 @@ public class GameManager : MonoBehaviour
 
         UpdateScore();
         ResetRound(player1Obj);
+        gameStarted = true;
     }
+
+    void Update()
+    {
+        if (!gameStarted || gameOver || Keyboard.current == null) return;
+
+        if (Keyboard.current[Key.T].wasPressedThisFrame)
+        {
+            TogglePlayerAI(player1Obj, ref player1AiEnabled, true, "Player 1");
+        }
+
+        if (Keyboard.current[Key.Digit3].wasPressedThisFrame || Keyboard.current[Key.Numpad3].wasPressedThisFrame)
+        {
+            TogglePlayerAI(player2Obj, ref player2AiEnabled, false, "Player 2");
+        }
+    }
+
+    private void TogglePlayerAI(GameObject playerObj, ref bool aiEnabled, bool playOnLeftSide, string playerName)
+    {
+        aiEnabled = !aiEnabled;
+        ConfigurePlayerAI(playerObj, aiEnabled, playOnLeftSide);
+        // ShowPointMessage(aiEnabled ? $"IA active pour {playerName}" : $"IA desactivee pour {playerName}");
+    }
+
+    private void ConfigurePlayerAI(GameObject playerObj, bool enableAI, bool playOnLeftSide)
+    {
+        PlayerController playerController = playerObj.GetComponent<PlayerController>();
+        if (playerController != null) playerController.enabled = !enableAI;
+
+        AIController ai = playerObj.GetComponent<AIController>();
+        if (ai == null) ai = playerObj.AddComponent<AIController>();
+
+        ai.ball = ballObj.transform;
+        ai.playOnLeftSide = playOnLeftSide;
+
+        if (playOnLeftSide)
+        {
+            ai.minX = -8f;
+            ai.maxX = -0.5f;
+            ai.centerX = -4f;
+        }
+        else
+        {
+            ai.minX = 0.5f;
+            ai.maxX = 8f;
+            ai.centerX = 4f;
+        }
+
+        ai.enabled = enableAI;
+    }
+
     IEnumerator ShowControlsCoroutine()
     {
         // On active le groupe complet d'un coup
